@@ -1,0 +1,760 @@
+<!-- 样本选择区域 -->
+<div class="section">
+    <h2><i class="fas fa-vial"></i> 样本选择</h2>
+    <div class="sample-selection">
+        <div class="form-group">
+            <label for="sample-select"><i class="fas fa-search"></i> 选择已分析的样本：</label>
+            <select id="sample-select">
+                <option value="">正在加载样本...</option>
+            </select>
+        </div>
+        <button type="button" class="btn btn-secondary" id="refresh-btn" onclick="loadSamples()">
+            <i class="fas fa-sync-alt"></i> 刷新列表
+        </button>
+    </div>
+    <div id="sample-status" class="status"></div>
+</div>
+
+<!-- 预测控制区域 -->
+<div class="section prediction-section">
+    <h2><i class="fas fa-rocket"></i> 模型预测</h2>
+    <button type="button" class="btn btn-predict" id="predict-btn" onclick="startPrediction()" disabled>
+        <i class="fas fa-play"></i> 开始预测分析
+    </button>
+    <div id="prediction-status" class="status"></div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p><i class="fas fa-cog fa-spin"></i> 正在进行模型预测，请稍候...</p>
+    </div>
+</div>
+
+<!-- 结果展示区域 -->
+<div class="results-container" id="results-container">
+    <div class="result-header">
+        <h3><i class="fas fa-chart-line"></i> 预测结果</h3>
+        <p id="sample-name-display"></p>
+    </div>
+
+    <!-- 决策树模型结果 -->
+    <div class="model-result">
+        <h3><i class="fas fa-tree"></i> 决策树 (Decision Tree) 模型</h3>
+        <div class="prediction-summary-card">
+            <div class="prediction-item">
+                <div class="prediction-content">
+                    <span class="prediction-label"><i class="fas fa-tag"></i>预测类别</span>
+                    <span class="prediction-value" id="rpart-prediction">-</span>
+                </div>
+            </div>
+            <div class="prediction-item">
+                <div class="prediction-content">
+                    <span class="prediction-label"><i class="fas fa-percentage"></i>风险值</span>
+                    <span class="prediction-value" id="rpart-confidence">-</span>
+                </div>
+            </div>
+        </div>
+        <div class="probability-bars" id="rpart-probabilities">
+            <!-- 概率条将在这里动态生成 -->
+        </div>
+    </div>
+
+    <!-- 随机森林模型结果 -->
+    <div class="model-result">
+        <h3><i class="fas fa-leaf"></i> 随机森林 (Random Forest) 模型</h3>
+        <div class="prediction-summary-card">
+            <div class="prediction-item">
+                <div class="prediction-content">
+                    <span class="prediction-label"><i class="fas fa-tag"></i>预测类别</span>
+                    <span class="prediction-value" id="rf-prediction">-</span>
+                </div>
+            </div>
+            <div class="prediction-item">
+                <div class="prediction-content">
+                    <span class="prediction-label"><i class="fas fa-percentage"></i>风险值</span>
+                    <span class="prediction-value" id="rf-confidence">-</span>
+                </div>
+            </div>
+        </div>
+        <div class="probability-bars" id="rf-probabilities">
+            <!-- 概率条将在这里动态生成 -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .sample-selection {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 20px;
+        align-items: end;
+    }
+
+    .form-group {
+        position: relative;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 1.1em;
+    }
+
+    select, button {
+        width: 100%;
+        padding: 15px 20px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: white;
+        font-family: inherit;
+    }
+
+    select:focus {
+        outline: none;
+        border-color: #4facfe;
+        box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .btn {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn:hover:not(:disabled)::before {
+        left: 100%;
+    }
+
+    .btn:hover:not(:disabled) {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(79, 172, 254, 0.4);
+    }
+
+    .btn:disabled {
+        background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        width: auto;
+        min-width: 140px;
+        padding: 15px 25px;
+    }
+
+    .btn-predict {
+        background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+        font-size: 1.1em;
+        padding: 18px 32px;
+        border-radius: 50px;
+        margin: 20px auto;
+        display: block;
+        width: auto;
+        max-width: 300px;
+        min-width: 200px;
+    }
+
+    .status {
+        margin-top: 20px;
+        padding: 15px 20px;
+        border-radius: 12px;
+        font-weight: 500;
+        text-align: center;
+        display: none;
+        position: relative;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .status.info {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        color: #1565c0;
+        border-left: 4px solid #2196f3;
+    }
+
+    .status.success {
+        background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+        color: #2e7d32;
+        border-left: 4px solid #4caf50;
+    }
+
+    .status.error {
+        background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+        color: #c62828;
+        border-left: 4px solid #f44336;
+    }
+
+    .results-container {
+        display: none;
+        animation: fadeInUp 0.6s ease;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+    }
+
+    .result-header h3 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .result-header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+    }
+
+    .model-result {
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%);
+        border: 1px solid rgba(79, 172, 254, 0.1);
+        border-radius: 20px;
+        padding: 35px;
+        margin-bottom: 30px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .model-result:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
+    }
+
+    .model-result::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(90deg, #4facfe, #00f2fe);
+    }
+
+    .model-result h3 {
+        color: #2d3748;
+        margin-bottom: 25px;
+        font-size: 1.6em;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .prediction-summary-card {
+        display: flex;
+        background: linear-gradient(145deg, #f8f9ff 0%, #ffffff 100%);
+        border: 1px solid rgba(79, 172, 254, 0.1);
+        border-radius: 15px;
+        margin-bottom: 30px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(79, 172, 254, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .prediction-summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #4facfe, #00f2fe);
+    }
+
+    .prediction-summary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(79, 172, 254, 0.15);
+    }
+
+    .prediction-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        padding: 25px;
+        flex: 1;
+        text-align: center;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+    }
+
+    .prediction-item:first-child {
+        border-right: 1px solid rgba(79, 172, 254, 0.1);
+    }
+
+    .prediction-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .prediction-label {
+        font-size: 0.9em;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .prediction-label i {
+        font-size: 1em;
+        color: #4facfe;
+    }
+
+    .prediction-value {
+        font-size: 2.5em;
+        font-weight: 800;
+        color: #2d3748;
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+        line-height: 1;
+    }
+
+    .probability-bars {
+        margin-top: 20px;
+    }
+
+    .probability-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 12px 15px;
+        background: linear-gradient(145deg, #f8f9ff 0%, #ffffff 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(79, 172, 254, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .probability-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(79, 172, 254, 0.1);
+    }
+
+    .probability-label {
+        min-width: 120px;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 1.05em;
+    }
+
+    .probability-bar-container {
+        flex: 1;
+        height: 12px;
+        background: #e2e8f0;
+        border-radius: 6px;
+        margin: 0 15px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .probability-bar {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 1s ease, background 0.3s ease;
+        background: linear-gradient(90deg, #4facfe, #00f2fe);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .probability-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    .probability-value {
+        min-width: 70px;
+        text-align: right;
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 1.05em;
+    }
+
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+
+    .spinner {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 20px;
+        position: relative;
+    }
+
+    .spinner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 4px solid #e2e8f0;
+        border-top: 4px solid #4facfe;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .spinner::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: calc(100% - 16px);
+        height: calc(100% - 16px);
+        border: 2px solid transparent;
+        border-top: 2px solid #00f2fe;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite reverse;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading p {
+        font-size: 1.1em;
+        color: #4a5568;
+        font-weight: 500;
+    }
+
+    .prediction-section {
+        text-align: center;
+        padding: 30px 20px;
+    }
+
+    .prediction-section h2 {
+        margin-bottom: 25px;
+        text-align: center;
+    }
+
+    @media (max-width: 768px) {
+        .sample-selection {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .prediction-summary-card {
+            flex-direction: column;
+        }
+
+        .prediction-item:first-child {
+            border-right: none;
+            border-bottom: 1px solid rgba(79, 172, 254, 0.1);
+        }
+
+        .prediction-item {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .prediction-value {
+            font-size: 2.2em;
+        }
+
+        .prediction-label {
+            font-size: 0.85em;
+        }
+
+        .probability-item {
+            flex-direction: column;
+            text-align: center;
+            gap: 10px;
+        }
+
+        .probability-bar-container {
+            margin: 0;
+            width: 100%;
+        }
+
+        .probability-label,
+        .probability-value {
+            min-width: auto;
+        }
+    }
+</style>
+
+<script>
+    // 获取Cookie的辅助函数
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // 获取可用样本列表
+    function loadSamples() {
+        const sampleSelect = document.getElementById('sample-select');
+        const refreshBtn = document.getElementById('refresh-btn');
+        
+        sampleSelect.innerHTML = '<option value="">正在加载...</option>';
+        refreshBtn.disabled = true;
+        
+        fetch('/get_available_samples/')
+            .then(response => response.json())
+            .then(data => {
+                sampleSelect.innerHTML = '';
+                
+                if (data.samples && data.samples.length > 0) {
+                    sampleSelect.innerHTML = '<option value="">请选择样本...</option>';
+                    data.samples.forEach(sample => {
+                        const option = document.createElement('option');
+                        option.value = sample.name;
+                        option.textContent = `${sample.name} (${sample.status})`;
+                        sampleSelect.appendChild(option);
+                    });
+                    showStatus('sample-status', `找到 ${data.samples.length} 个可用样本`, 'success');
+                } else {
+                    sampleSelect.innerHTML = '<option value="">暂无可用样本</option>';
+                    showStatus('sample-status', '暂无已完成分析的样本，请先进行16S测序分析', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('获取样本列表失败:', error);
+                sampleSelect.innerHTML = '<option value="">加载失败</option>';
+                showStatus('sample-status', '获取样本列表失败，请刷新重试', 'error');
+            })
+            .finally(() => {
+                refreshBtn.disabled = false;
+                updatePredictButton();
+            });
+    }
+
+    // 样本选择变化时更新预测按钮状态
+    document.addEventListener('DOMContentLoaded', function() {
+        const sampleSelect = document.getElementById('sample-select');
+        if (sampleSelect) {
+            sampleSelect.addEventListener('change', updatePredictButton);
+        }
+    });
+
+    function updatePredictButton() {
+        const sampleSelect = document.getElementById('sample-select');
+        const predictBtn = document.getElementById('predict-btn');
+        
+        if (sampleSelect && predictBtn) {
+            predictBtn.disabled = !sampleSelect.value || sampleSelect.value === '';
+        }
+    }
+
+    // 开始预测
+    function startPrediction() {
+        const sampleSelect = document.getElementById('sample-select');
+        const selectedSample = sampleSelect.value;
+        
+        if (!selectedSample) {
+            showStatus('prediction-status', '请先选择样本', 'error');
+            return;
+        }
+
+        // 显示加载状态
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('results-container').style.display = 'none';
+        document.getElementById('predict-btn').disabled = true;
+        showStatus('prediction-status', '正在进行模型预测...', 'info');
+
+        // 准备表单数据
+        const formData = new FormData();
+        formData.append('sample_name', selectedSample);
+        formData.append('action', 'predict');
+        
+        // 获取CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                         getCookie('csrftoken');
+        if (csrfToken) {
+            formData.append('csrfmiddlewaretoken', csrfToken);
+        }
+
+        // 发送预测请求
+        fetch('/integrated/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('predict-btn').disabled = false;
+            
+            if (data.success) {
+                displayResults(data);
+                showStatus('prediction-status', '预测完成！', 'success');
+                
+                // 预测成功后更新统计数据
+                if (typeof updatePredictionStats === 'function') {
+                    setTimeout(() => {
+                        updatePredictionStats();
+                    }, 500);
+                } else if (window.parent && typeof window.parent.updatePredictionStats === 'function') {
+                    setTimeout(() => {
+                        window.parent.updatePredictionStats();
+                    }, 500);
+                }
+            } else {
+                showStatus('prediction-status', data.error || '预测失败', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('预测失败:', error);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('predict-btn').disabled = false;
+            showStatus('prediction-status', '预测过程中发生错误，请重试', 'error');
+        });
+    }
+
+    // 显示预测结果
+    function displayResults(data) {
+        const resultsContainer = document.getElementById('results-container');
+        const sampleNameDisplay = document.getElementById('sample-name-display');
+        
+        sampleNameDisplay.textContent = `样本: ${data.sample_name}`;
+        
+        // 类别标签
+        const labels = ['控制组', '自闭症'];
+        
+        // 显示每个模型的结果
+        displayModelResult('rpart', data.predictions.rpart, labels);
+        displayModelResult('rf', data.predictions.rf, labels);
+        
+        resultsContainer.style.display = 'block';
+        
+        // 滚动到结果区域
+        setTimeout(() => {
+            resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+    }
+
+    // 显示单个模型的结果
+    function displayModelResult(modelName, prediction, labels) {
+        // 更新预测类别和置信度
+        document.getElementById(`${modelName}-prediction`).textContent = labels[prediction.prediction];
+        document.getElementById(`${modelName}-confidence`).textContent = `${(prediction.confidence * 100).toFixed(1)}%`;
+        
+        // 生成概率条
+        const probabilitiesContainer = document.getElementById(`${modelName}-probabilities`);
+        probabilitiesContainer.innerHTML = '';
+        
+        prediction.probabilities.forEach((prob, index) => {
+            const item = document.createElement('div');
+            item.className = 'probability-item';
+            
+            const percentage = (prob * 100).toFixed(1);
+            
+            item.innerHTML = `
+                <div class="probability-label">
+                    <i class="fas fa-${index === 0 ? 'user-check' : 'user-md'}"></i>
+                    ${labels[index]}
+                </div>
+                <div class="probability-bar-container">
+                    <div class="probability-bar" style="width: 0%"></div>
+                </div>
+                <div class="probability-value">${percentage}%</div>
+            `;
+            
+            probabilitiesContainer.appendChild(item);
+            
+            // 延迟动画效果
+            setTimeout(() => {
+                const bar = item.querySelector('.probability-bar');
+                bar.style.width = `${percentage}%`;
+            }, 100 + index * 200);
+        });
+    }
+
+    // 显示状态消息
+    function showStatus(elementId, message, type) {
+        const statusElement = document.getElementById(elementId);
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+            
+            // 5秒后自动隐藏成功消息
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
+        }
+    }
+</script> 

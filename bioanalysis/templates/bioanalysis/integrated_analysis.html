@@ -1,0 +1,953 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>16S 微生物分析系统 - 集成分析平台</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding: 0 2rem;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            text-decoration: none;
+        }
+
+        .navbar-brand i {
+            color: #2176ff;
+            font-size: 1.8rem;
+        }
+
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            background: rgba(224, 234, 252, 0.3);
+            color: #2176ff;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            color: #2d3748;
+        }
+
+        /* 用户菜单 */
+        .user-menu {
+            position: relative;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: rgba(224, 234, 252, 0.2);
+        }
+
+        .user-info:hover {
+            background: rgba(224, 234, 252, 0.3);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            min-width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            margin-top: 8px;
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(224, 234, 252, 0.3);
+            color: #2176ff;
+        }
+
+        .dropdown-item i {
+            width: 16px;
+            text-align: center;
+        }
+
+        /* 主要内容区域 */
+        .main-content {
+            margin-top: 70px;
+            padding: 2rem;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            left: -300px;
+            top: 70px;
+            width: 300px;
+            height: calc(100vh - 70px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            z-index: 999;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .sidebar.show {
+            left: 0;
+        }
+
+        .sidebar-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.9rem;
+            color: #718096;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-menu-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu-link:hover {
+            background: rgba(224, 234, 252, 0.3);
+            color: #2176ff;
+        }
+
+        .sidebar-menu-link.active {
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            color: #2d3748;
+        }
+
+        /* 内容卡片 */
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .content-wrapper.with-sidebar {
+            margin-left: 300px;
+        }
+
+        .welcome-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .welcome-subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(120deg, rgba(224, 234, 252, 0.3), rgba(207, 222, 243, 0.3));
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(224, 234, 252, 0.5);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #2176ff;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        /* 工作区域 */
+        .workspace {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .workspace-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .workspace-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .workspace-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .workspace-tab {
+            padding: 1rem 1.5rem;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #4a5568;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .workspace-tab:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .workspace-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .content-wrapper.with-sidebar {
+                margin-left: 0;
+            }
+            
+            .sidebar {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 1rem;
+            }
+            
+            .navbar-nav {
+                gap: 1rem;
+            }
+            
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .welcome-title {
+                font-size: 1.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .workspace-tabs {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a67d8, #6b46c1);
+        }
+
+        /* 覆盖层 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #4a5568;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .navbar-nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <a href="#" class="navbar-brand">
+            <i class="fas fa-dna"></i>
+            16S 微生物分析系统
+        </a>
+        
+        <div class="navbar-nav">
+            <a href="#" class="nav-link active" onclick="showWorkspace()">
+                <i class="fas fa-flask"></i>
+                分析工作台
+            </a>
+            <a href="/dashboard/" class="nav-link">
+                <i class="fas fa-tachometer-alt"></i>
+                用户控制台
+            </a>
+            {% if user.is_superuser %}
+            <a href="/admin/" class="nav-link">
+                <i class="fas fa-cogs"></i>
+                系统管理
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="user-menu">
+            <div class="user-info" onclick="toggleUserMenu()">
+                <div class="user-avatar">
+                    {{ user.username|first|upper }}
+                </div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.username }}</div>
+                    <div class="user-role">
+                        {% if user.is_superuser %}
+                            系统管理员
+                        {% else %}
+                            普通用户
+                        {% endif %}
+                    </div>
+                </div>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            
+            <div class="dropdown-menu" id="userDropdown">
+                <a href="#" class="dropdown-item" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                    样本工作区
+                </a>
+                <a href="/dashboard/" class="dropdown-item">
+                    <i class="fas fa-user"></i>
+                    个人资料
+                </a>
+                {% if user.is_superuser %}
+                <a href="/admin/" class="dropdown-item">
+                    <i class="fas fa-shield-alt"></i>
+                    管理后台
+                </a>
+                <a href="#" class="dropdown-item">
+                    <i class="fas fa-users"></i>
+                    用户管理
+                </a>
+                <a href="#" class="dropdown-item">
+                    <i class="fas fa-database"></i>
+                    数据管理
+                </a>
+                {% endif %}
+                <a href="#" class="dropdown-item">
+                    <i class="fas fa-cog"></i>
+                    设置
+                </a>
+                <a href="/logout/" class="dropdown-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出登录
+                </a>
+            </div>
+        </div>
+
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </nav>
+
+    <!-- 侧边栏 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">样本分析工作区</div>
+            <div class="sidebar-subtitle">管理您的分析样本</div>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li class="sidebar-menu-item">
+                <a href="#" class="sidebar-menu-link active">
+                    <i class="fas fa-vial"></i>
+                    所有样本
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="#" class="sidebar-menu-link">
+                    <i class="fas fa-clock"></i>
+                    进行中的分析
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="#" class="sidebar-menu-link">
+                    <i class="fas fa-check-circle"></i>
+                    已完成的分析
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="#" class="sidebar-menu-link">
+                    <i class="fas fa-brain"></i>
+                    预测结果
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="#" class="sidebar-menu-link">
+                    <i class="fas fa-download"></i>
+                    下载报告
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 覆盖层 -->
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+        <div class="content-wrapper" id="contentWrapper">
+            <!-- 欢迎区域 -->
+            <div class="welcome-section">
+                <div class="welcome-title">
+                    <i class="fas fa-microscope"></i>
+                    欢迎使用 16S 微生物分析系统
+                </div>
+                <div class="welcome-subtitle">
+                    基于 FastP + QIIME2 的微生物群落测序数据处理与自闭症风险预测平台
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ total_samples|default:0 }}</div>
+                        <div class="stat-label">总样本数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ completed_analyses|default:0 }}</div>
+                        <div class="stat-label">已完成分析</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ predictions_made|default:0 }}</div>
+                        <div class="stat-label">预测次数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ active_users|default:1 }}</div>
+                        <div class="stat-label">活跃用户</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 工作区域 -->
+            <div class="workspace">
+                <div class="workspace-header">
+                    <div class="workspace-title">
+                        <i class="fas fa-flask"></i>
+                        分析工作台
+                    </div>
+                </div>
+
+                <div class="workspace-tabs">
+                    <div class="workspace-tab active" onclick="switchWorkspaceTab('analysis')">
+                        <i class="fas fa-upload"></i>
+                        16S 测序数据分析
+                    </div>
+                    <div class="workspace-tab" onclick="switchWorkspaceTab('prediction')">
+                        <i class="fas fa-brain"></i>
+                        自闭症风险预测
+                    </div>
+                    <div class="workspace-tab" onclick="switchWorkspaceTab('disease')">
+                        <i class="fas fa-heartbeat"></i>
+                        常见病预测
+                    </div>
+                </div>
+
+                <!-- 分析内容 -->
+                <div id="analysis-tab" class="tab-content active">
+                    {% include 'bioanalysis/analyze_content.html' %}
+                </div>
+
+                <!-- 预测内容 -->
+                <div id="prediction-tab" class="tab-content">
+                    {% include 'bioanalysis/prediction_content.html' %}
+                </div>
+
+                <!-- 常见病预测内容 -->
+                <div id="disease-tab" class="tab-content">
+                    {% include 'bioanalysis/disease_prediction.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 用户菜单切换
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // 侧边栏切换
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const contentWrapper = document.getElementById('contentWrapper');
+            
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+            
+            if (window.innerWidth > 1024) {
+                contentWrapper.classList.toggle('with-sidebar');
+            }
+        }
+
+        // 关闭侧边栏
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const contentWrapper = document.getElementById('contentWrapper');
+            
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+            contentWrapper.classList.remove('with-sidebar');
+        }
+
+        // 工作台标签切换
+        function switchWorkspaceTab(tabName) {
+            // 更新标签状态
+            const tabs = document.querySelectorAll('.workspace-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // 更新内容显示
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            
+            const activeContent = document.getElementById(tabName + '-tab');
+            activeContent.classList.add('active');
+            
+            // 如果是预测页面，自动加载样本列表
+            if (tabName === 'prediction' && typeof loadSamples === 'function') {
+                setTimeout(() => {
+                    loadSamples();
+                }, 300);
+            }
+            
+            // 如果是常见病预测页面，自动加载样本列表
+            if (tabName === 'disease' && typeof loadAvailableSamples === 'function') {
+                setTimeout(() => {
+                    loadAvailableSamples();
+                }, 300);
+            }
+        }
+
+        // 显示工作区
+        function showWorkspace() {
+            // 这里可以添加显示工作区的逻辑
+        }
+
+        // 移动端菜单切换
+        function toggleMobileMenu() {
+            // 这里可以添加移动端菜单的逻辑
+        }
+
+        // 更新统计数据
+        function updateUserStats() {
+            fetch('/get_user_stats/')
+                .then(response => response.json())
+                .then(data => {
+                    // 更新统计数据显示
+                    const totalSamplesEl = document.querySelector('.stat-card:nth-child(1) .stat-value');
+                    const completedAnalysesEl = document.querySelector('.stat-card:nth-child(2) .stat-value');
+                    const predictionsMadeEl = document.querySelector('.stat-card:nth-child(3) .stat-value');
+                    const activeUsersEl = document.querySelector('.stat-card:nth-child(4) .stat-value');
+                    
+                    if (totalSamplesEl) totalSamplesEl.textContent = data.total_samples;
+                    if (completedAnalysesEl) completedAnalysesEl.textContent = data.completed_analyses;
+                    if (predictionsMadeEl) predictionsMadeEl.textContent = data.predictions_made;
+                    if (activeUsersEl) activeUsersEl.textContent = data.active_users;
+                    
+                    // 添加更新动画效果
+                    [totalSamplesEl, completedAnalysesEl, predictionsMadeEl, activeUsersEl].forEach(el => {
+                        if (el) {
+                            el.style.transform = 'scale(1.1)';
+                            el.style.transition = 'transform 0.3s ease';
+                            setTimeout(() => {
+                                el.style.transform = 'scale(1)';
+                            }, 300);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('更新统计数据失败:', error);
+                });
+        }
+
+        // 只更新总样本数（文件上传成功后调用）
+        function updateTotalSamples() {
+            fetch('/get_user_stats/')
+                .then(response => response.json())
+                .then(data => {
+                    // 只更新总样本数显示
+                    const totalSamplesEl = document.querySelector('.stat-card:nth-child(1) .stat-value');
+                    
+                    if (totalSamplesEl) {
+                        totalSamplesEl.textContent = data.total_samples;
+                        
+                        // 添加更新动画效果
+                        totalSamplesEl.style.transform = 'scale(1.1)';
+                        totalSamplesEl.style.transition = 'transform 0.3s ease';
+                        setTimeout(() => {
+                            totalSamplesEl.style.transform = 'scale(1)';
+                        }, 300);
+                    }
+                })
+                .catch(error => {
+                    console.error('更新总样本数失败:', error);
+                });
+        }
+
+        // 监听分析完成事件
+        function checkAnalysisCompletion() {
+            // 这个函数会在分析过程中被调用
+            // 检查日志中是否有完成标记
+            if (typeof getLog === 'function') {
+                fetch('/get_log/')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.log && data.log.includes('[STAGE] done')) {
+                            // 分析完成，更新已完成分析数
+                            setTimeout(() => {
+                                updateCompletedAnalyses();
+                            }, 2000); // 延迟2秒确保数据已更新
+                        }
+                    })
+                    .catch(error => {
+                        console.error('检查分析状态失败:', error);
+                    });
+            }
+        }
+
+        // 监听预测完成事件
+        function onPredictionComplete() {
+            // 预测完成后更新预测次数
+            setTimeout(() => {
+                updatePredictionStats();
+            }, 500);
+        }
+
+        // 页面获得焦点时更新统计数据
+        window.addEventListener('focus', () => {
+            updateUserStats();
+        });
+
+        // 点击外部关闭用户菜单
+        document.addEventListener('click', function(event) {
+            const userMenu = document.querySelector('.user-menu');
+            const dropdown = document.getElementById('userDropdown');
+            
+            if (!userMenu.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // 页面加载动画
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                document.body.style.transition = 'opacity 0.5s ease';
+                document.body.style.opacity = '1';
+            }, 100);
+            
+            // 页面加载完成后立即更新一次统计数据
+            setTimeout(() => {
+                updateUserStats();
+            }, 1000);
+        });
+
+        // 响应式处理
+        window.addEventListener('resize', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const contentWrapper = document.getElementById('contentWrapper');
+            
+            if (window.innerWidth <= 1024) {
+                contentWrapper.classList.remove('with-sidebar');
+            } else if (sidebar.classList.contains('show')) {
+                contentWrapper.classList.add('with-sidebar');
+            }
+        });
+
+        // 只更新预测次数（预测成功后调用）
+        function updatePredictionStats() {
+            fetch('/get_user_stats/')
+                .then(response => response.json())
+                .then(data => {
+                    // 只更新预测次数显示
+                    const predictionsMadeEl = document.querySelector('.stat-card:nth-child(3) .stat-value');
+                    
+                    if (predictionsMadeEl) {
+                        predictionsMadeEl.textContent = data.predictions_made;
+                        
+                        // 添加更新动画效果
+                        predictionsMadeEl.style.transform = 'scale(1.1)';
+                        predictionsMadeEl.style.transition = 'transform 0.3s ease';
+                        setTimeout(() => {
+                            predictionsMadeEl.style.transform = 'scale(1)';
+                        }, 300);
+                    }
+                })
+                .catch(error => {
+                    console.error('更新预测次数失败:', error);
+                });
+        }
+
+        // 只更新已完成分析数（分析完成后调用）
+        function updateCompletedAnalyses() {
+            fetch('/get_user_stats/')
+                .then(response => response.json())
+                .then(data => {
+                    // 只更新已完成分析数显示
+                    const completedAnalysesEl = document.querySelector('.stat-card:nth-child(2) .stat-value');
+                    
+                    if (completedAnalysesEl) {
+                        completedAnalysesEl.textContent = data.completed_analyses;
+                        
+                        // 添加更新动画效果
+                        completedAnalysesEl.style.transform = 'scale(1.1)';
+                        completedAnalysesEl.style.transition = 'transform 0.3s ease';
+                        setTimeout(() => {
+                            completedAnalysesEl.style.transform = 'scale(1)';
+                        }, 300);
+                    }
+                })
+                .catch(error => {
+                    console.error('更新已完成分析数失败:', error);
+                });
+        }
+    </script>
+</body>
+</html> 

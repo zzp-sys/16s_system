@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>样本结果 - 16S微生物分析系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        
+        .navbar {
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1030;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        
+        .navbar .dropdown-menu {
+            z-index: 1050 !important;
+            position: absolute !important;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-top: 8px;
+        }
+        
+        .results-container {
+            padding: 20px;
+        }
+        
+        .page-header {
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            color: #2d3748;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(224, 234, 252, 0.3);
+        }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .sample-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sample-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .sample-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+        }
+        
+        .sample-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+        
+        .sample-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .sample-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .analysis-item, .prediction-item {
+            background: #f8f9ff;
+            border: 1px solid rgba(79, 172, 254, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .prediction-item {
+            background: linear-gradient(145deg, #fff5f5 0%, #fef5e7 100%);
+            border-color: rgba(255, 107, 107, 0.2);
+        }
+        
+        .json-prediction-item {
+            background: linear-gradient(145deg, #f0fff4 0%, #e6fffa 100%);
+            border: 2px solid rgba(56, 178, 172, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .risk-level {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .risk-high {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .risk-medium {
+            background: #fef5e7;
+            color: #dd6b20;
+        }
+        
+        .risk-low {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .model-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .model-result {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .model-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .confidence-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* 概率可视化样式 */
+        .probability-chart {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .probability-bar {
+            display: flex;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .prob-control {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+        
+        .prob-autism {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+        }
+        
+        .probability-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #4a5568;
+            margin-top: 8px;
+        }
+        
+        .probability-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .btn-report {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-report:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(56, 161, 105, 0.4);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .back-btn {
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            color: #2d3748;
+            border: none;
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .back-btn:hover {
+            color: #2176ff;
+            transform: translateY(-2px);
+        }
+        
+        /* 风险分布统计样式 */
+        .risk-distribution-container .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .risk-distribution-container .card-header {
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            color: #2d3748;
+            border-radius: 15px 15px 0 0;
+            border: none;
+        }
+        
+        .risk-stat-item {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .risk-high-bg {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+        }
+        
+        .risk-medium-bg {
+            background: linear-gradient(135deg, #ffd93d 0%, #ff8906 100%);
+            color: white;
+        }
+        
+        .risk-low-bg {
+            background: linear-gradient(135deg, #6bcf7f 0%, #4abdcc 100%);
+            color: white;
+        }
+        
+        .risk-stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .risk-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* 预测摘要样式 */
+        .prediction-summary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .prediction-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            text-align: center;
+        }
+        
+        .prediction-summary-item {
+            padding: 10px;
+        }
+        
+        .prediction-summary-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .prediction-summary-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+        
+        /* 新增：概率摘要样式 */
+        .probability-summary {
+            background: linear-gradient(135deg, #38b2ac 0%, #319795 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        
+        .probability-summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .probability-summary-item {
+            padding: 10px;
+        }
+        
+        .probability-summary-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .probability-summary-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* 详细内容样式 */
+        .prediction-details-content {
+            padding: 25px;
+            background: white;
+            border-radius: 0 0 15px 15px;
+            border: 1px solid rgba(56, 178, 172, 0.1);
+            border-top: none;
+        }
+        
+        .details-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        /* 模型详情网格样式 */
+        .model-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .model-detail-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #f7fafc;
+        }
+        
+        .detail-label {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-right: 8px;
+        }
+        
+        /* 模型信息网格样式 */
+        .model-info-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            border: 1px solid rgba(79, 172, 254, 0.1);
+        }
+        
+        .model-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        
+        .model-info-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .info-label {
+            font-size: 0.9rem;
+            color: #4a5568;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .info-value {
+            font-size: 0.9rem;
+            color: #2d3748;
+        }
+        
+        /* JSON原始数据样式 */
+        .json-raw-data-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .json-raw-container {
+            margin-top: 10px;
+        }
+        
+        .json-raw-content {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        /* 展开/折叠动画 */
+        .collapse {
+            transition: all 0.3s ease;
+        }
+        
+        .collapsing {
+            transition: height 0.3s ease;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .prediction-actions {
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 5px;
+            }
+            
+            .model-details-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .model-info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .quick-probability-preview .row {
+                margin: 0;
+            }
+            
+            .quick-probability-preview .col-md-6 {
+                padding: 0 5px;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fas fa-dna me-2"></i>16S微生物分析系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-2"></i>{{ user.username }}
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>首页</a></li>
+                        <li><a class="dropdown-item" href="{% url 'integrated_analysis' %}"><i class="fas fa-flask me-2"></i>样本分析</a></li>
+                        <li><a class="dropdown-item" href="{% url 'sample_results' %}"><i class="fas fa-chart-line me-2"></i>样本结果</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>退出登录</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container results-container">
+        <!-- 返回按钮 -->
+        <a href="{% url 'dashboard' %}" class="back-btn">
+            <i class="fas fa-arrow-left"></i>返回控制台
+        </a>
+        
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1><i class="fas fa-chart-bar me-3"></i>样本分析结果</h1>
+            <p class="mb-0">查看您所有样本的16S测序分析报告和自闭症风险预测结果</p>
+        </div>
+
+        <!-- 统计概览 -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_samples }}</div>
+                <div>总样本数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ completed_analyses }}</div>
+                <div>已完成分析</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ total_predictions }}</div>
+                <div>预测次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ average_confidence|floatformat:1 }}%</div>
+                <div>平均置信度</div>
+            </div>
+        </div>
+
+        <!-- 风险分布统计 -->
+        {% if total_predictions > 0 %}
+        <div class="risk-distribution-container mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>风险分布统计</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="risk-stat-item risk-high-bg">
+                                <div class="risk-stat-number">{{ risk_distribution.高风险 }}</div>
+                                <div class="risk-stat-label">高风险样本</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="risk-stat-item risk-medium-bg">
+                                <div class="risk-stat-number">{{ risk_distribution.中风险 }}</div>
+                                <div class="risk-stat-label">中风险样本</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="risk-stat-item risk-low-bg">
+                                <div class="risk-stat-number">{{ risk_distribution.低风险 }}</div>
+                                <div class="risk-stat-label">低风险样本</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 样本列表 -->
+        {% if samples_data %}
+            {% for sample in samples_data %}
+            <div class="sample-card">
+                <div class="sample-header">
+                    <h3 class="sample-name">
+                        <i class="fas fa-vial me-2"></i>{{ sample.name }}
+                    </h3>
+                    <span class="sample-status {% if sample.is_completed %}status-completed{% else %}status-pending{% endif %}">
+                        {% if sample.is_completed %}已完成分析{% else %}分析中{% endif %}
+                    </span>
+                </div>
+
+                <!-- 16S分析报告 -->
+                <div class="section">
+                    <h4 class="section-title">
+                        <i class="fas fa-dna"></i>16S测序分析报告
+                    </h4>
+                    {% if sample.has_16s_report %}
+                        <div class="analysis-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>分析报告已生成</strong>
+                                    <div class="text-muted small">包含物种组成、多样性分析等详细结果</div>
+                                </div>
+                                <a href="{{ sample.report_path }}" target="_blank" class="btn-report">
+                                    <i class="fas fa-external-link-alt"></i>查看报告
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="analysis-item">
+                            <div class="text-muted">
+                                <i class="fas fa-clock me-2"></i>分析报告生成中或尚未开始分析
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- JSON预测结果 -->
+                {% if sample.json_predictions %}
+                <div class="section">
+                    <h4 class="section-title">
+                        <i class="fas fa-brain"></i>自闭症风险预测结果 (最新预测)
+                    </h4>
+                    {% for json_pred in sample.json_predictions %}
+                    <div class="json-prediction-item">
+                        <!-- 预测结果摘要 -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1">
+                                    <i class="fas fa-brain me-2"></i>
+                                    <strong>{{ json_pred.data.risk_level }}</strong>
+                                    <span class="badge bg-primary ms-2">{% widthratio json_pred.data.rpart_model.confidence 1 100 %}% 置信度</span>
+                                </h5>
+                                <div class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ json_pred.data.prediction_time|date:"Y-m-d H:i:s" }}
+                                    {% if json_pred.is_latest %}
+                                        <span class="badge bg-success ms-2">最新</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="risk-level risk-{% if json_pred.data.risk_level == '高风险' %}high{% elif json_pred.data.risk_level == '中风险' %}medium{% else %}low{% endif %}">
+                                {{ json_pred.data.risk_level }}
+                            </span>
+                        </div>
+                        
+                        <!-- 模型预测结果 -->
+                        <div class="model-results">
+                            <div class="model-result">
+                                <div class="model-title">
+                                    <i class="fas fa-leaf me-2"></i>随机森林模型
+                                </div>
+                                <div class="mb-2">
+                                    预测结果: <strong>
+                                        {% if json_pred.data.rf_model.prediction == 0 %}
+                                            <span class="text-success">控制组</span>
+                                        {% else %}
+                                            <span class="text-danger">自闭症风险</span>
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                                <div class="confidence">
+                                    <span class="confidence-label">置信度：</span>
+                                    <span class="confidence-value">{% widthratio json_pred.data.rf_model.confidence 1 100 %}%</span>
+                                </div>
+                                <div class="probability-section">
+                                    <div class="probability-chart">
+                                        <div class="probability-bar">
+                                            <div class="prob-control" style="width: {% widthratio json_pred.data.rf_model.control_probability 1 100 %}%">
+                                                <span class="probability-value">{% widthratio json_pred.data.rf_model.control_probability 1 100 %}%</span>
+                                            </div>
+                                            <div class="prob-autism" style="width: {% widthratio json_pred.data.rf_model.autism_probability 1 100 %}%">
+                                                <span class="probability-value">{% widthratio json_pred.data.rf_model.autism_probability 1 100 %}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="model-result">
+                                <div class="model-title">
+                                    <i class="fas fa-tree me-2"></i>决策树模型
+                                </div>
+                                <div class="mb-2">
+                                    预测结果: <strong>
+                                        {% if json_pred.data.rpart_model.prediction == 0 %}
+                                            <span class="text-success">控制组</span>
+                                        {% else %}
+                                            <span class="text-danger">自闭症风险</span>
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                                <div class="confidence">
+                                    <span class="confidence-label">置信度：</span>
+                                    <span class="confidence-value">{% widthratio json_pred.data.rpart_model.confidence 1 100 %}%</span>
+                                </div>
+                                <div class="probability-section">
+                                    <div class="probability-chart">
+                                        <div class="probability-bar">
+                                            <div class="prob-control" style="width: {% widthratio json_pred.data.rpart_model.control_probability 1 100 %}%">
+                                                <span class="probability-value">{% widthratio json_pred.data.rpart_model.control_probability 1 100 %}%</span>
+                                            </div>
+                                            <div class="prob-autism" style="width: {% widthratio json_pred.data.rpart_model.autism_probability 1 100 %}%">
+                                                <span class="probability-value">{% widthratio json_pred.data.rpart_model.autism_probability 1 100 %}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- 分析任务 -->
+                {% if sample.analysis_tasks %}
+                <div class="section">
+                    <h4 class="section-title">
+                        <i class="fas fa-tasks"></i>分析任务
+                    </h4>
+                    {% for task in sample.analysis_tasks %}
+                    <div class="analysis-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ task.task_id }}</strong>
+                                <div class="text-muted small">{{ task.created_time|date:"Y-m-d H:i:s" }}</div>
+                            </div>
+                            <span class="sample-status {% if task.status == 'completed' %}status-completed{% else %}status-pending{% endif %}">
+                                {{ task.status }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- 如果没有JSON预测结果，显示提示信息 -->
+                {% if not sample.json_predictions %}
+                <div class="section">
+                    <h4 class="section-title">
+                        <i class="fas fa-brain"></i>预测结果
+                    </h4>
+                    <div class="analysis-item">
+                        <div class="text-muted">
+                            <i class="fas fa-info-circle me-2"></i>暂无预测结果，请前往
+                            <a href="{% url 'integrated_analysis' %}" class="text-decoration-none">预测分析页面</a>
+                            进行预测
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-flask"></i>
+                <h3>暂无样本数据</h3>
+                <p>您还没有上传任何样本，请前往<a href="{% url 'integrated_analysis' %}" class="text-decoration-none">样本分析页面</a>开始上传样本。</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 添加过滤器支持
+        document.addEventListener('DOMContentLoaded', function() {
+            // 格式化概率显示为小数点后两位
+            function formatProbabilityDisplay() {
+                const probElements = document.querySelectorAll('.prob-control, .prob-autism');
+                probElements.forEach(element => {
+                    const text = element.textContent.trim();
+                    if (text.includes('%')) {
+                        const value = parseFloat(text.replace('%', ''));
+                        if (!isNaN(value)) {
+                            element.textContent = value.toFixed(2) + '%';
+                        }
+                    }
+                });
+                
+                const probLabels = document.querySelectorAll('.probability-value');
+                probLabels.forEach(element => {
+                    const text = element.textContent.trim();
+                    const match = text.match(/(\d+(?:\.\d+)?)%/);
+                    if (match) {
+                        const value = parseFloat(match[1]);
+                        if (!isNaN(value)) {
+                            element.textContent = element.textContent.replace(match[0], value.toFixed(2) + '%');
+                        }
+                    }
+                });
+            }
+            
+            // 执行格式化
+            formatProbabilityDisplay();
+            
+            // 设置置信度条的初始宽度
+            const confidenceBars = document.querySelectorAll('.confidence-fill');
+            confidenceBars.forEach(bar => {
+                const confidence = bar.getAttribute('data-confidence');
+                if (confidence) {
+                    bar.style.width = confidence + '%';
+                }
+            });
+            
+            // 动画效果
+            const cards = document.querySelectorAll('.sample-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>16S微生物分析系统 - 用户首页</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .dashboard-container {
+            padding: 20px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-header {
+            background: linear-gradient(120deg, #d1e7ff 0%, #b8d4f0 100%);
+            color: #2d3748;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 15px 20px;
+            border: none;
+        }
+        .stats-card {
+            background: linear-gradient(120deg, #d1e7ff 0%, #b8d4f0 100%);
+            color: #2d3748;
+            text-align: center;
+            padding: 20px;
+        }
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .activity-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        .activity-upload { background: #e3f2fd; color: #1976d2; }
+        .activity-analysis { background: #f3e5f5; color: #7b1fa2; }
+        .activity-login { background: #e8f5e8; color: #388e3c; }
+        .activity-logout { background: #ffebee; color: #d32f2f; }
+        .activity-view_result { background: #fff3e0; color: #f57c00; }
+        
+        .sample-item {
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+        }
+        .sample-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        
+        .navbar {
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1030;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        
+        /* 修复下拉菜单被覆盖的问题 */
+        .navbar .dropdown-menu {
+            z-index: 1050 !important;
+            position: absolute !important;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-top: 8px;
+        }
+        
+        .navbar .dropdown-item {
+            padding: 8px 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar .dropdown-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+        
+        .navbar .nav-item.dropdown {
+            position: relative;
+            z-index: 1050;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 500;
+        }
+        .btn-outline-primary {
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 500;
+        }
+        .btn-outline-primary:hover {
+            background: #667eea;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fas fa-dna me-2"></i>16S微生物分析系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-2"></i>{{ user.username }}
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>首页</a></li>
+                        <li><a class="dropdown-item" href="{% url 'integrated_analysis' %}"><i class="fas fa-flask me-2"></i>样本分析</a></li>
+                        <li><a class="dropdown-item" href="{% url 'integrated_analysis' %}"><i class="fas fa-brain me-2"></i>预测模型</a></li>
+                        <li><a class="dropdown-item" href="{% url 'integrated_analysis' %}"><i class="fas fa-chart-line me-2"></i>整合分析</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>退出登录</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container dashboard-container">
+        <!-- 欢迎信息 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="mb-3">
+                            <i class="fas fa-home me-2"></i>欢迎回来，{{ user.username }}！
+                        </h2>
+                        <p class="text-muted mb-0">这里是您的16S微生物分析控制台，您可以查看分析历史、管理样本和进行预测分析。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-number">{{ system_status.total_samples }}</div>
+                    <div class="stats-label">总样本数</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-number">{{ system_status.completed_samples }}</div>
+                    <div class="stats-label">已完成分析</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-number">{{ system_status.pending_samples }}</div>
+                    <div class="stats-label">分析中</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-number">{{ system_status.user_activities }}</div>
+                    <div class="stats-label">最近活动</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-rocket me-2"></i>快速操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'integrated_analysis' %}" class="btn btn-primary w-100">
+                                    <i class="fas fa-upload me-2"></i>上传样本
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'integrated_analysis' %}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-brain me-2"></i>预测分析
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'integrated_analysis' %}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-chart-line me-2"></i>整合分析
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="/admin/" class="btn btn-outline-primary w-100" target="_blank">
+                                    <i class="fas fa-cog me-2"></i>系统管理
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 最近活动 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>最近活动</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_activities %}
+                            {% for activity in recent_activities %}
+                            <div class="activity-item d-flex align-items-center">
+                                <div class="activity-icon activity-{{ activity.action_type }}">
+                                    {% if activity.action_type == 'upload' %}
+                                        <i class="fas fa-upload"></i>
+                                    {% elif activity.action_type == 'analysis' %}
+                                        <i class="fas fa-flask"></i>
+                                    {% elif activity.action_type == 'login' %}
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    {% elif activity.action_type == 'logout' %}
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    {% elif activity.action_type == 'view_result' %}
+                                        <i class="fas fa-eye"></i>
+                                    {% else %}
+                                        <i class="fas fa-info"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">{{ activity.description }}</div>
+                                    <small class="text-muted">{{ activity.timestamp|date:"Y-m-d H:i:s" }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                <p>暂无活动记录</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 样本列表 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-vial me-2"></i>最近样本</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if samples %}
+                            {% for sample in samples %}
+                            <div class="sample-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ sample.name }}</h6>
+                                        <small class="text-muted">{{ sample.created_time|date:"Y-m-d H:i" }}</small>
+                                    </div>
+                                    <span class="sample-status {% if sample.status == '已完成分析' %}status-completed{% else %}status-pending{% endif %}">
+                                        {{ sample.status }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-vial fa-2x mb-3"></i>
+                                <p>暂无样本数据</p>
+                                <a href="{% url 'integrated_analysis' %}" class="btn btn-primary">开始上传样本</a>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- 查看全部样本按钮始终可见 -->
+                        <div class="text-center mt-3">
+                            <a href="/sample_results/" 
+                               class="btn btn-sm btn-outline-primary"
+                               target="_self">查看全部样本</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

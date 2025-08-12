@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>登录 - 16S分析系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        .split-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .left-panel {
+            flex: 1.2;
+            background: linear-gradient(135deg, #e0eafc 0%, #a1c4fd 100%);
+            color: #222;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0 5vw;
+        }
+        .left-panel img {
+            width: 180px;
+            margin-bottom: 32px;
+            filter: drop-shadow(0 8px 32px #4facfe33);
+        }
+        .left-title {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 18px;
+            letter-spacing: 2px;
+            color: #2176ff;
+        }
+        .left-desc {
+            font-size: 1.18em;
+            color: #4a5568;
+            margin-bottom: 12px;
+            text-align: center;
+            line-height: 1.7;
+        }
+        .right-panel {
+            flex: 1;
+            background: #f7fafc;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-width: 350px;
+        }
+        .login-card {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(79,172,254,0.10);
+            padding: 44px 38px 32px 38px;
+            width: 100%;
+            max-width: 370px;
+            color: #222;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .login-title {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            text-align: left;
+            color: #2176ff;
+        }
+        .login-desc {
+            color: #6b7280;
+            font-size: 1.08em;
+            margin-bottom: 18px;
+        }
+        .form-group {
+            margin-bottom: 18px;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-size: 1em;
+            font-weight: 500;
+        }
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4facfe;
+            font-size: 1.1em;
+            pointer-events: none;
+            z-index: 1;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 14px 45px 14px 45px;
+            border-radius: 8px;
+            border: 1.5px solid #e0e0e0;
+            font-size: 1em;
+            background: #f3f6fa;
+            color: #222;
+            transition: border 0.2s, background 0.2s;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            border: 1.5px solid #4facfe;
+            outline: none;
+            background: #fff;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #b0b8c1;
+            font-size: 1.1em;
+            z-index: 2;
+        }
+        .toggle-password:hover {
+            color: #4facfe;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px #4facfe33;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+            box-shadow: 0 6px 18px #4facfe44;
+        }
+        .error, .success {
+            margin-bottom: 12px;
+            text-align: center;
+            font-weight: 500;
+            border-radius: 6px;
+            padding: 10px 0;
+        }
+        .error { color: #ff6b81; background: #fff0f0; }
+        .success { color: #43e97b; background: #f0fff5; }
+        .register-link {
+            text-align: right;
+            margin-top: 10px;
+            font-size: 1em;
+        }
+        .register-link a {
+            color: #2176ff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .register-link a:hover { text-decoration: underline; }
+        .copyright {
+            text-align: center;
+            color: #888;
+            font-size: 0.98em;
+            margin-top: 38px;
+            margin-bottom: 18px;
+            letter-spacing: 1px;
+        }
+        .remember-me {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            margin-top: -5px;
+        }
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        .remember-me label {
+            margin-bottom: 0;
+            color: #4a5568;
+            font-size: 0.98em;
+            cursor: pointer;
+            font-weight: 400;
+        }
+        @media (max-width: 900px) {
+            .split-container { flex-direction: column; }
+            .left-panel, .right-panel { min-width: 0; width: 100%; }
+            .left-panel { min-height: 220px; padding: 32px 4vw 18px 4vw; }
+            .right-panel { min-height: 420px; }
+        }
+        @media (max-width: 600px) {
+            .login-card { padding: 24px 6vw; }
+            .left-panel img { width: 100px; }
+        }
+    </style>
+</head>
+<body>
+<div class="split-container">
+    <div class="left-panel">
+        <img src="https://img.icons8.com/color/180/000000/microscope.png" alt="logo">
+        <div class="left-title">16S微生物分析系统</div>
+        <div class="left-desc">
+            开箱即用的现代生信分析平台<br>
+            高性能 · 可视化 · 一站式分析体验
+        </div>
+    </div>
+    <div class="right-panel">
+        <form class="login-card" method="post">
+            <div class="login-title">欢迎回来 <span style="font-size:1.1em;">👋</span></div>
+            <div class="login-desc">请输入您的账号信息以开始分析您的项目</div>
+            {% csrf_token %}
+            {% if error %}<div class="error">{{ error }}</div>{% endif %}
+            {% if success %}<div class="success">{{ success }}</div>{% endif %}
+            <div class="form-group">
+                <label>用户名</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-user input-icon"></i>
+                    <input type="text" name="username" required autocomplete="username">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-lock input-icon"></i>
+                    <input type="password" name="password" id="password-input" required autocomplete="current-password">
+                    <i class="fa fa-eye toggle-password" id="toggle-password" title="显示/隐藏密码"></i>
+                </div>
+            </div>
+            <div class="remember-me">
+                <input type="checkbox" id="remember" name="remember">
+                <label for="remember" style="margin-bottom:0; color:#4a5568; font-size:0.98em;">记住我</label>
+            </div>
+            <button class="btn" type="submit">登录</button>
+            <div class="register-link">
+                没有账号？<a href="{% url 'register' %}">注册新用户</a>
+            </div>
+        </form>
+        <div class="copyright">
+            &copy; 2024 16S微生物分析系统 | Powered by Django
+        </div>
+    </div>
+</div>
+<script>
+    // 密码可见/隐藏
+    document.getElementById('toggle-password').onclick = function() {
+        var pwd = document.getElementById('password-input');
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            this.classList.remove('fa-eye');
+            this.classList.add('fa-eye-slash');
+        } else {
+            pwd.type = 'password';
+            this.classList.remove('fa-eye-slash');
+            this.classList.add('fa-eye');
+        }
+    };
+</script>
+</body>
+</html> 
